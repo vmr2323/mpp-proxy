@@ -1,7 +1,7 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ['mppx'],
+  serverExternalPackages: ['mppx', 'viem'],
   typescript: {
     ignoreBuildErrors: true,
   },
