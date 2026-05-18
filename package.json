@@ -8,7 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
-    "next": "15.3.3",
+    "next": "15.5.18",
     "mppx": "latest",
     "@modelcontextprotocol/sdk": "latest",
     "viem": "latest",
