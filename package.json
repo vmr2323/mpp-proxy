@@ -10,6 +10,7 @@
   "dependencies": {
     "next": "15.3.3",
     "mppx": "latest",
+    "@modelcontextprotocol/sdk": "latest",
     "viem": "latest",
     "lru-cache": "latest",
     "react": "^19.0.0",
