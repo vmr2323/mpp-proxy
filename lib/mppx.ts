@@ -1,19 +1,23 @@
-import { Mppx, tempo } from 'mppx/nextjs'
+import { Mppx, tempo } from 'mppx/server'
+import { USDC_E_ADDRESS } from './chain'
 
-if (!process.env.RECIPIENT_ADDRESS) {
-  throw new Error('RECIPIENT_ADDRESS env var is required')
+const RECIPIENT = process.env.MPP_RECIPIENT
+if (!RECIPIENT || !/^0x[a-fA-F0-9]{40}$/.test(RECIPIENT)) {
+  throw new Error('MPP_RECIPIENT env var is required and must be a 0x address')
 }
 
 export const mppx = Mppx.create({
   methods: [
-    tempo({
-      currency: '0x20c0000000000000000000000000000000000000', // pathUSD on Tempo
-      recipient: process.env.RECIPIENT_ADDRESS,
+    tempo.charge({
+      currency: USDC_E_ADDRESS,
+      recipient: RECIPIENT as `0x${string}`,
     }),
   ],
 })
 
-export const CHARGE_AMOUNT = process.env.CHARGE_AMOUNT ?? '0.01'
+// PRICE is a decimal string in USDC.e tokens, NOT base units.
+// '0.01' = one cent. mppx handles the 6-decimal conversion internally.
+export const PRICE = process.env.PRICE || '0.01'
 
 const defaultAllowed = [
   'api.coingecko.com',
