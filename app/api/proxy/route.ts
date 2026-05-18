@@ -1,7 +1,6 @@
 import { mppx, CHARGE_AMOUNT, ALLOWED_DOMAINS } from '@/lib/mppx'
 
-export async function POST(request: Request) {
-  // Parse body
+async function proxyHandler(request: Request): Promise<Response> {
   let body: { url?: string; method?: string; body?: unknown; headers?: Record<string, string> }
   try {
     body = await request.json()
@@ -15,7 +14,6 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Missing required field: url' }, { status: 400 })
   }
 
-  // Validate URL against whitelist
   let parsedUrl: URL
   try {
     parsedUrl = new URL(url)
@@ -25,47 +23,37 @@ export async function POST(request: Request) {
 
   if (!ALLOWED_DOMAINS.includes(parsedUrl.hostname)) {
     return Response.json(
-      {
-        error: `Domain not allowed: ${parsedUrl.hostname}`,
-        allowed: ALLOWED_DOMAINS,
-      },
+      { error: `Domain not allowed: ${parsedUrl.hostname}`, allowed: ALLOWED_DOMAINS },
       { status: 403 }
     )
   }
 
-  // MPP payment check — returns 402 if not paid, otherwise calls our handler
-  const charge = mppx.charge({ amount: CHARGE_AMOUNT })
+  const fetchOptions: RequestInit = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'mpp-proxy/1.0',
+      ...extraHeaders,
+    },
+  }
 
-  return charge(request, async () => {
-    // Payment verified — proxy the request
-    const fetchOptions: RequestInit = {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': 'mpp-proxy/1.0',
-        ...extraHeaders,
-      },
-    }
+  if (targetBody && method !== 'GET' && method !== 'HEAD') {
+    fetchOptions.body = JSON.stringify(targetBody)
+  }
 
-    if (targetBody && method !== 'GET' && method !== 'HEAD') {
-      fetchOptions.body = JSON.stringify(targetBody)
-    }
-
-    try {
-      const upstream = await fetch(url, fetchOptions)
-      const data = await upstream.text()
-
-      return new Response(data, {
-        status: upstream.status,
-        headers: {
-          'Content-Type': upstream.headers.get('Content-Type') ?? 'application/json',
-        },
-      })
-    } catch (err) {
-      return Response.json({ error: 'Upstream request failed', detail: String(err) }, { status: 502 })
-    }
-  })
+  try {
+    const upstream = await fetch(url, fetchOptions)
+    const data = await upstream.text()
+    return new Response(data, {
+      status: upstream.status,
+      headers: { 'Content-Type': upstream.headers.get('Content-Type') ?? 'application/json' },
+    })
+  } catch (err) {
+    return Response.json({ error: 'Upstream request failed', detail: String(err) }, { status: 502 })
+  }
 }
+
+export const POST = mppx.charge({ amount: CHARGE_AMOUNT })(proxyHandler)
 
 export async function GET() {
   return Response.json({
