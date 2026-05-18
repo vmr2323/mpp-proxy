@@ -1,4 +1,4 @@
-import { mppx, PRICE, ALLOWED_DOMAINS } from '@/lib/mppx'
+import { getMppx, PRICE, ALLOWED_DOMAINS } from '@/lib/mppx'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: Request): Promise<Response> {
   // 1. Payment middleware FIRST — must return 402 before any validation,
   //    so MPPScan and agents can discover pricing on an empty request.
-  const charge = mppx.charge({ amount: PRICE })
+  const charge = getMppx().charge({ amount: PRICE })
   const result = await charge(request)
   if (result.status === 402) return result.challenge
 
